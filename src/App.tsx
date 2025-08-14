@@ -13,12 +13,12 @@ const manualTracks: AudioTrack[] = [
   {
     id: 1,
     title: '1)क्यों कुछ स्वयम्भू आतम ज्ञानी कबीर साहेब की वाणी',
-    url: 'https://infoogy.s3.ap-south-1.amazonaws.com/testing/satsang/1749828802658-0_0.mp3',
+    url: 'https://d1voyzlrdxkjko.cloudfront.net/1749828804128-0_0.mp3',
   },
   {
     id: 2,
     title: '2)आत्म ज्ञानी कभी किसी लोक में नहीं जाता',
-    url: 'https://infoogy.s3.ap-south-1.amazonaws.com/testing/satsang/1749828804128-0_0.mp3',
+    url: 'https://d1voyzlrdxkjko.cloudfront.net/1749828802658-0_0.mp3',
   },
   {
     id: 3,
@@ -49,7 +49,53 @@ function App() {
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [wasPlayingBeforeHidden, setWasPlayingBeforeHidden] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // PWA Installation
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
+  useEffect(() => {
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
+    // PWA Install Prompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setShowInstallButton(false);
+    }
+    
+    setDeferredPrompt(null);
+  };
 
   // Auto-fetch duration for all tracks
   useEffect(() => {
@@ -140,6 +186,39 @@ function App() {
     }
   }, [playbackRate]);
 
+  // Page Visibility API - Pause when user leaves, resume when returns
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!audioRef.current) return;
+
+      if (document.hidden) {
+        // User left the page/tab
+        if (isPlaying) {
+          setWasPlayingBeforeHidden(true);
+          audioRef.current.pause();
+          setIsPlaying(false);
+        }
+      } else {
+        // User returned to the page/tab
+        if (wasPlayingBeforeHidden) {
+          audioRef.current.play().then(() => {
+            setIsPlaying(true);
+            setWasPlayingBeforeHidden(false);
+          }).catch((error) => {
+            console.error('Error resuming audio:', error);
+            setWasPlayingBeforeHidden(false);
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying, wasPlayingBeforeHidden]);
+
   const togglePlay = async () => {
     if (!audioRef.current) return;
 
@@ -197,37 +276,49 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white safe-area-inset">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Music className="w-12 h-12 text-yellow-400 mr-4" />
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+            <Music className="w-12 h-12 text-white mr-4" />
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Spiritual Satsang
             </h1>
           </div>
-          <p className="text-blue-200 text-lg">Divine Audio Collection for Inner Peace</p>
+          
+          {/* PWA Install Button */}
+          {showInstallButton && (
+            <div className="mt-4">
+              <button
+                onClick={handleInstallClick}
+                className="px-6 py-3 bg-gradient-to-r from-white to-gray-200 text-black rounded-xl font-semibold shadow-lg hover:from-gray-200 hover:to-gray-300 transition-all duration-300 transform hover:scale-105"
+              >
+                📱 Install App
+              </button>
+              <p className="text-gray-400 text-sm mt-2">Install for better mobile experience</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar - Track List */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
             <div className="mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search tracks..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
                 />
               </div>
             </div>
 
             <div className="h-96 overflow-y-auto custom-scrollbar">
-              <h2 className="text-xl font-semibold mb-4 text-yellow-400">Track List ({filteredTracks.length})</h2>
+              <h2 className="text-xl font-semibold mb-4 text-white">Track List ({filteredTracks.length})</h2>
               <div className="space-y-2">
                 {filteredTracks.map((track, index) => {
                   const originalIndex = tracks.findIndex(t => t.id === track.id);
@@ -237,16 +328,16 @@ function App() {
                       onClick={() => playTrack(originalIndex)}
                       className={`p-3 rounded-lg cursor-pointer transition-all duration-300 hover:bg-white/20 ${
                         originalIndex === currentTrackIndex
-                          ? 'bg-yellow-400/20 border border-yellow-400/50'
+                          ? 'bg-white/20 border border-white/50'
                           : 'bg-white/5 hover:bg-white/10'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-medium text-sm truncate">{track.title}</h3>
-                          <p className="text-blue-300 text-xs">Track {track.id}</p>
+                          <p className="text-gray-400 text-xs">Track {track.id}</p>
                         </div>
-                        <span className="text-blue-300 text-xs">
+                        <span className="text-gray-400 text-xs">
                           {trackDurations[track.id] || 'Loading...'}
                         </span>
                       </div>
@@ -258,27 +349,27 @@ function App() {
           </div>
 
           {/* Main Player */}
-          <div className="lg:col-span-2 bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+          <div className="lg:col-span-2 bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10">
             <div className="text-center mb-8">
-              <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-2xl">
-                <Music className="w-16 h-16 text-white" />
+              <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-white to-gray-300 rounded-full flex items-center justify-center shadow-2xl">
+                <Music className="w-16 h-16 text-black" />
               </div>
               <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
-              <p className="text-blue-300">Track {currentTrack.id} of {tracks.length}</p>
+              <p className="text-gray-400">Track {currentTrack.id} of {tracks.length}</p>
             </div>
 
             {/* Progress Bar */}
             <div className="mb-8">
               <div
-                className="w-full h-2 bg-white/20 rounded-full cursor-pointer"
+                className="w-full h-2 bg-white/10 rounded-full cursor-pointer"
                 onClick={seek}
               >
                 <div
-                  className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-white to-gray-300 rounded-full transition-all duration-300"
                   style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                 />
               </div>
-              <div className="flex justify-between mt-2 text-sm text-blue-300">
+              <div className="flex justify-between mt-2 text-sm text-gray-400">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
@@ -289,26 +380,26 @@ function App() {
               <button
                 onClick={previousTrack}
                 disabled={currentTrackIndex === 0}
-                className="p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                className="p-3 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
               >
                 <SkipBack className="w-6 h-6" />
               </button>
 
               <button
                 onClick={togglePlay}
-                className="p-4 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
+                className="p-4 rounded-full bg-gradient-to-r from-white to-gray-200 hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
               >
                 {isPlaying ? (
-                  <Pause className="w-8 h-8 text-white" />
+                  <Pause className="w-8 h-8 text-black" />
                 ) : (
-                  <Play className="w-8 h-8 text-white ml-1" />
+                  <Play className="w-8 h-8 text-black ml-1" />
                 )}
               </button>
 
               <button
                 onClick={nextTrack}
                 disabled={currentTrackIndex === tracks.length - 1}
-                className="p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                className="p-3 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
               >
                 <SkipForward className="w-6 h-6" />
               </button>
@@ -316,7 +407,7 @@ function App() {
 
             {/* Volume Control */}
             <div className="flex items-center justify-center space-x-4 mb-6">
-              <Volume2 className="w-5 h-5 text-blue-300" />
+              <Volume2 className="w-5 h-5 text-gray-400" />
               <input
                 type="range"
                 min="0"
@@ -324,17 +415,17 @@ function App() {
                 step="0.1"
                 value={volume}
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="w-32 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                className="w-32 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%, rgba(255,255,255,0.2) 100%)`
+                  background: `linear-gradient(to right, #ffffff 0%, #ffffff ${volume * 100}%, rgba(255,255,255,0.1) ${volume * 100}%, rgba(255,255,255,0.1) 100%)`
                 }}
               />
-              <span className="text-blue-300 text-sm">{Math.round(volume * 100)}%</span>
+              <span className="text-gray-400 text-sm">{Math.round(volume * 100)}%</span>
             </div>
 
             {/* Playback Speed Control */}
             <div className="flex items-center justify-center space-x-4">
-              <Gauge className="w-5 h-5 text-blue-300" />
+              <Gauge className="w-5 h-5 text-gray-400" />
               <div className="flex space-x-2">
                 {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
                   <button
@@ -342,15 +433,15 @@ function App() {
                     onClick={() => setPlaybackRate(speed)}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${
                       playbackRate === speed
-                        ? 'bg-yellow-400 text-black'
-                        : 'bg-white/10 text-blue-300 hover:bg-white/20'
+                        ? 'bg-white text-black'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
                   >
                     {speed}x
                   </button>
                 ))}
               </div>
-              <span className="text-blue-300 text-sm">Speed: {playbackRate}x</span>
+              <span className="text-gray-400 text-sm">Speed: {playbackRate}x</span>
             </div>
 
             {/* Audio Element */}
@@ -371,15 +462,15 @@ function App() {
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.05);
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(245, 158, 11, 0.6);
+          background: rgba(255, 255, 255, 0.3);
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(245, 158, 11, 0.8);
+          background: rgba(255, 255, 255, 0.5);
         }
         
         input[type="range"]::-webkit-slider-thumb {
@@ -387,9 +478,9 @@ function App() {
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #f59e0b;
+          background: #ffffff;
           cursor: pointer;
-          border: 2px solid white;
+          border: 2px solid black;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
         
@@ -397,10 +488,43 @@ function App() {
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #f59e0b;
+          background: #ffffff;
           cursor: pointer;
-          border: 2px solid white;
+          border: 2px solid black;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* PWA Safe Area Support */
+        .safe-area-inset {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+          .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+          
+          /* Touch-friendly controls */
+          button {
+            min-height: 44px;
+            min-width: 44px;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="range"] {
+            font-size: 16px;
+          }
+        }
+        
+        /* Hide scrollbar but keep functionality */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
         }
       `}</style>
     </div>
