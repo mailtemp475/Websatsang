@@ -8,7 +8,9 @@ export interface AudioTrack {
 
 // Satsang Tracks - Spiritual Talks
 export const satsangTracks: AudioTrack[] = [
- { "id": 1, "title": "1) क्यों कुछ स्वयम्भू आतम ज्ञानी कबीर साहेब की वाणी", "url": "https://d1voyzlrdxkjko.cloudfront.net/1749828802658-0_0.mp3", "category": 'satsang', },
+ { "id": 1, "title": "1) क्यों कुछ स्वयम्भू आतम ज्ञानी कबीर साहेब की वाणी", "url": "https://d1voyzlrdxkjko.cloudfront.net/1749828802658-0_0.mp3" ,"category": 'satsang'},
+  { "id": 2, "title": "2) आत्म ज्ञानी कभी किसी लोक में नहीं जाता", "url": "https://d1voyzlrdxkjko.cloudfront.net/1749828804128-0_0.mp3" ,"category": 'satsang'},
+
   
 ];
 
