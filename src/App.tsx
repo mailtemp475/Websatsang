@@ -1,47 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Search, Music, Gauge } from 'lucide-react';
+import { satsangTracks } from './satsangTracks';
+import { kabirTracks } from './kabirTracks';
 
 interface AudioTrack {
   id: number;
   title: string;
   url: string;
   duration?: string;
+  category: 'satsang' | 'kabir';
 }
 
-// Manual Track List - Aap yahan manually saare tracks add kar sakte hain
-const manualTracks: AudioTrack[] = [
-  {
-    id: 1,
-    title: '1)क्यों कुछ स्वयम्भू आतम ज्ञानी कबीर साहेब की वाणी',
-    url: 'https://d1voyzlrdxkjko.cloudfront.net/1749828804128-0_0.mp3',
-  },
-  {
-    id: 2,
-    title: '2)आत्म ज्ञानी कभी किसी लोक में नहीं जाता',
-    url: 'https://d1voyzlrdxkjko.cloudfront.net/1749828802658-0_0.mp3',
-  },
-  {
-    id: 3,
-    title: '3)ऐसा क्यों है कि बिना गुरु के कोई भी आत्म ज्ञान',
-    url: 'https://infoogy.s3.ap-south-1.amazonaws.com/testing/satsang/1749828805658-0_0.mp3',
-  },
-  
-   {
-     id: 4,
-     title: '4)आखिर क्यो हमें जिन्दगी में किसी ना किसी गुरु की जरूरत पडती है ।',
-     url: 'https://infoogy.s3.ap-south-1.amazonaws.com/testing/satsang/1749828807300-0_0.mp3',
-   },
-  // Yahan aap aur tracks add kar sakte hain:
-  // {
-  //   id: 5,
-  //   title: 'Another Track',
-  //   url: 'https://infoogy.s3.ap-south-1.amazonaws.com/testing/satsang/ANOTHER_FILE_ID-0_0.mp3',
-  // },
-];
+// Combine all tracks
+const allTracks: AudioTrack[] = [...satsangTracks, ...kabirTracks];
 
 function App() {
-  const [tracks] = useState<AudioTrack[]>(manualTracks);
-  const [trackDurations, setTrackDurations] = useState<{[key: number]: string}>({});
+  const [tracks] = useState<AudioTrack[]>(allTracks);
+  const [activeTab, setActiveTab] = useState<'satsang' | 'kabir'>('satsang');
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -50,6 +25,7 @@ function App() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [wasPlayingBeforeHidden, setWasPlayingBeforeHidden] = useState(false);
+  const [trackDurations, setTrackDurations] = useState<{ [key: number]: string }>({});
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // PWA Installation
@@ -146,6 +122,7 @@ function App() {
 
   const currentTrack = tracks[currentTrackIndex];
   const filteredTracks = tracks.filter(track => 
+    track.category === activeTab && 
     track.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -304,6 +281,32 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar - Track List */}
           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+            {/* Tab Navigation */}
+            <div className="mb-6">
+              <div className="flex space-x-2 bg-white/5 rounded-xl p-1">
+                <button
+                  onClick={() => setActiveTab('satsang')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    activeTab === 'satsang'
+                      ? 'bg-white text-black'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Satsang
+                </button>
+                <button
+                  onClick={() => setActiveTab('kabir')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    activeTab === 'kabir'
+                      ? 'bg-white text-black'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Kabir Bhajan
+                </button>
+              </div>
+            </div>
+
             <div className="mb-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -318,7 +321,9 @@ function App() {
             </div>
 
             <div className="h-96 overflow-y-auto custom-scrollbar">
-              <h2 className="text-xl font-semibold mb-4 text-white">Track List ({filteredTracks.length})</h2>
+              <h2 className="text-xl font-semibold mb-4 text-white">
+                {activeTab === 'satsang' ? 'Satsang' : 'Kabir Bhajan'} ({filteredTracks.length})
+              </h2>
               <div className="space-y-2">
                 {filteredTracks.map((track, index) => {
                   const originalIndex = tracks.findIndex(t => t.id === track.id);
@@ -335,7 +340,9 @@ function App() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-medium text-sm truncate">{track.title}</h3>
-                          <p className="text-gray-400 text-xs">Track {track.id}</p>
+                          <p className="text-gray-400 text-xs">
+                            {track.category === 'satsang' ? 'Satsang' : 'Kabir Bhajan'} #{track.id}
+                          </p>
                         </div>
                         <span className="text-gray-400 text-xs">
                           {trackDurations[track.id] || 'Loading...'}
@@ -355,7 +362,9 @@ function App() {
                 <Music className="w-16 h-16 text-black" />
               </div>
               <h2 className="text-2xl font-bold mb-2">{currentTrack.title}</h2>
-              <p className="text-gray-400">Track {currentTrack.id} of {tracks.length}</p>
+              <p className="text-gray-400">
+                {currentTrack.category === 'satsang' ? 'Satsang' : 'Kabir Bhajan'} • Track {currentTrack.id} of {tracks.length}
+              </p>
             </div>
 
             {/* Progress Bar */}
