@@ -25,100 +25,7 @@ function App() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [wasPlayingBeforeHidden, setWasPlayingBeforeHidden] = useState(false);
-  const [trackDurations, setTrackDurations] = useState<{ [key: number]: string }>({});
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  // PWA Installation
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-
-  useEffect(() => {
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('SW registered: ', registration);
-          })
-          .catch((registrationError) => {
-            console.log('SW registration failed: ', registrationError);
-          });
-      });
-    }
-
-    // PWA Install Prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setShowInstallButton(false);
-    }
-    
-    setDeferredPrompt(null);
-  };
-
-  // Auto-fetch duration for all tracks
-  useEffect(() => {
-    const fetchDurations = async () => {
-      const durations: {[key: number]: string} = {};
-      
-      for (const track of tracks) {
-        try {
-          const audio = new Audio();
-          audio.preload = 'metadata';
-          
-          await new Promise((resolve, reject) => {
-            audio.addEventListener('loadedmetadata', () => {
-              const duration = audio.duration;
-              if (!isNaN(duration)) {
-                const minutes = Math.floor(duration / 60);
-                const seconds = Math.floor(duration % 60);
-                durations[track.id] = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-              } else {
-                durations[track.id] = 'Loading...';
-              }
-              resolve(void 0);
-            });
-            
-            audio.addEventListener('error', () => {
-              durations[track.id] = 'Error';
-              resolve(void 0);
-            });
-            
-            // Set timeout to avoid hanging
-            setTimeout(() => {
-              durations[track.id] = 'Unknown';
-              resolve(void 0);
-            }, 10000);
-            
-            audio.src = track.url;
-          });
-        } catch (error) {
-          durations[track.id] = 'Error';
-        }
-      }
-      
-      setTrackDurations(durations);
-    };
-    
-    fetchDurations();
-  }, [tracks]);
 
   const currentTrack = tracks[currentTrackIndex];
   const filteredTracks = tracks.filter(track => 
@@ -263,19 +170,6 @@ function App() {
               Spiritual Satsang
             </h1>
           </div>
-          
-          {/* PWA Install Button */}
-          {showInstallButton && (
-            <div className="mt-4">
-              <button
-                onClick={handleInstallClick}
-                className="px-6 py-3 bg-gradient-to-r from-white to-gray-200 text-black rounded-xl font-semibold shadow-lg hover:from-gray-200 hover:to-gray-300 transition-all duration-300 transform hover:scale-105"
-              >
-                📱 Install App
-              </button>
-              <p className="text-gray-400 text-sm mt-2">Install for better mobile experience</p>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -344,9 +238,6 @@ function App() {
                             {track.category === 'satsang' ? 'Satsang' : 'Kabir Bhajan'} #{track.id}
                           </p>
                         </div>
-                        <span className="text-gray-400 text-xs">
-                          {trackDurations[track.id] || 'Loading...'}
-                        </span>
                       </div>
                     </div>
                   );
