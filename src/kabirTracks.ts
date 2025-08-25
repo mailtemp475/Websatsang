@@ -22,8 +22,8 @@ export const kabirTracks: AudioTrack[] = [
   },
   {
     id: 503,
-    title: 'मन लागो मेरो यार फकीरी में - जगजीत सिंह',
-    url: 'https://ia800607.us.archive.org/10/items/HindiBhajansOfKabirByJagjitSinghOtherMp3/robert%20Bly%20reads%20Rumi-2-%28We%20should%20ask%20god....%29.mp3',
+    title: 'कबीर दोहे - जगजीत सिंह',
+    url: 'https://ia600607.us.archive.org/10/items/HindiBhajansOfKabirByJagjitSinghOtherMp3/Kabir%20ke%20DOHE%20by%20JAGJIT%20AND%20KABIR.mp3',
     category: 'kabir',
   },
   {
@@ -34,8 +34,8 @@ export const kabirTracks: AudioTrack[] = [
   },
   {
     id: 505,
-    title: 'साधो ये मुर्दन का गांव - जगजीत सिंह',
-    url: 'https://ia600607.us.archive.org/10/items/HindiBhajansOfKabirByJagjitSinghOtherMp3/Abida%20sings%20Kabir%20-%20Bhala%20Hua%20Meri%20Mutki%20Toot%20Gayee.mp3',
+    title: 'The Poetry of kabir',
+    url: 'https://ia600607.us.archive.org/10/items/HindiBhajansOfKabirByJagjitSinghOtherMp3/The%20Poetry%20of%20Kabir.mp3',
     category: 'kabir',
   },
 ];
